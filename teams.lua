@@ -3,50 +3,22 @@
 #include "networking.lua"
 #include "utilities.lua"
 #include "json.lua"
-local teams = {}
-local player_team = {}
+teams = teams or {}
+player_team = player_team or {}
 function createTeam(tbl)
     table.insert(teams, tbl)
     return #teams
 end
 
+
+if not GetBool("level.tdmp_teamsloaded") then
+
 TEAM_SPECTATOR = createTeam({
     name = "Spectator",
     description = "You are dead!",
-    color = {1,1,1}
+    color = {1,1,1},
+    default = true
 })
-
-TEAM_RED = createTeam({
-    name = "Red",
-    description = "",
-    color = {1,0,0}
-})
-
-TEAM_BLUE = createTeam({
-    name = "Blue",
-    description = "",
-    color = {0,0,1}
-})
-
-function GetTeam(pl)
-    if not pl then return end
-    if type(pl) == "string" then pl = Player(pl) end
-    if not pl then return end
-    if not player_team[pl.steamId ] then pl.team = TEAM_SPECTATOR; player_team[pl.steamId ] = TEAM_SPECTATOR end
-    return player_team[pl.steamId ] 
-end
-
-function GetTeamTable(pl)
-    if not pl then return end
-    if type(pl) == "string" then pl = Player(pl) end
-    if not pl then return end
-    if not player_team[pl.steamId ] then pl.team = TEAM_SPECTATOR; player_team[pl.steamId ] = TEAM_SPECTATOR end
-    return teams[GetTeam(pl)]
-end
-
-function TeamValid(id)
-    return teams[id] ~= nil
-end
 
 TDMP_RegisterEvent("setTeam", function(jsonData)
     if TDMP_IsServer() then return end
@@ -56,6 +28,65 @@ TDMP_RegisterEvent("setTeam", function(jsonData)
     player_team[steamid] = team
     Player(steamid).team = team
 end)
+
+Hook_AddListener("PlayerConnected", "syncTeams", function(steamid)
+    SetTeam(pl, GetDefaultTeam())
+    SyncTeams(steamid)
+end)
+    SetBool("level.tdmp_teamsloaded", true)
+end
+
+--[[ -- EXAMPLE TEAMS, YOU CAN CREATE TEAMS IN THE FILEs YOU REQUIRE teams.lua IN
+    TEAM_RED = createTeam({
+    name = "Red",
+    description = "",
+    color = {1,0,0},
+})
+
+TEAM_BLUE = createTeam({
+    name = "Blue",
+    description = "",
+    color = {0,0,1}
+})
+]]
+
+function GetDefaultTeam() -- gets id
+    for _, team in ipairs(teams) do
+        if team.default then return _ end
+    end
+    return 1
+end
+
+function SetDefaultTeam(id)
+    for _, team in ipairs(teams) do
+        team.default = false
+    end
+    if teams[id] then
+        teams[id].default = true
+    end
+end
+
+function GetTeam(pl)
+    if not pl then return end
+    if type(pl) == "string" then pl = Player(pl) end
+    if not pl then return end
+    if not player_team[pl.steamId ] then pl.team = GetDefaultTeam(); player_team[pl.steamId ] = GetDefaultTeam() end
+    return player_team[pl.steamId ] 
+end
+
+function GetTeamTable(pl)
+    if not pl then return end
+    if type(pl) == "string" then pl = Player(pl) end
+    if not pl then return end
+    if not player_team[pl.steamId ] then pl.team = GetDefaultTeam(); player_team[pl.steamId ] = GetDefaultTeam() end
+    return teams[GetTeam(pl)]
+end
+
+function TeamValid(id)
+    return teams[id] ~= nil
+end
+
+
 
 function SyncTeams(pl)
     if not TDMP_IsServer() then return end
