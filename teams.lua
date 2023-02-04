@@ -50,6 +50,11 @@ TEAM_BLUE = createTeam({
 })
 ]]
 
+function TeamValid(id)
+    return teams[id] ~= nil
+end
+
+
 function GetDefaultTeam() -- gets id
     for _, team in ipairs(teams) do
         if team.default then return _ end
@@ -74,7 +79,7 @@ function GetTeam(pl)
     return player_team[pl.steamId ] 
 end
 
-function GetTeamTable(pl)
+function GetPlayerTeamTable(pl)
     if not pl then return end
     if type(pl) == "string" then pl = Player(pl) end
     if not pl then return end
@@ -82,9 +87,11 @@ function GetTeamTable(pl)
     return teams[GetTeam(pl)]
 end
 
-function TeamValid(id)
-    return teams[id] ~= nil
+function GetTeamTable(id)
+    if not TeamValid(id) then return {name = "NULL", description = "NULL", color = {0,0,0}} end
+    return teams[id]
 end
+
 
 
 
